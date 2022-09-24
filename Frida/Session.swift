@@ -2,6 +2,8 @@ import CFrida
 
 @objc(FridaSession)
 public class Session: NSObject, NSCopying {
+    
+    @objc
     public weak var delegate: SessionDelegate?
 
     public typealias DetachComplete = () -> Void
@@ -49,6 +51,7 @@ public class Session: NSObject, NSCopying {
                                                   releaseConnection, GConnectFlags(0))
     }
 
+    @objc
     public func copy(with zone: NSZone?) -> Any {
         g_object_ref(gpointer(handle))
         return Session(handle: handle)
@@ -65,22 +68,27 @@ public class Session: NSObject, NSCopying {
         }
     }
 
+    @objc(processIdentifier)
     public var pid: UInt {
         return UInt(frida_session_get_pid(handle))
     }
 
+    @objc
     public var persistTimeout: UInt {
         return UInt(frida_session_get_persist_timeout(handle))
     }
 
+    @objc
     public var isDetached: Bool {
         return frida_session_is_detached(handle) != 0
     }
 
+    @objc
     public override var description: String {
         return "Frida.Session(pid: \(pid))"
     }
 
+    @objc
     public override func isEqual(_ object: Any?) -> Bool {
         if let session = object as? Session {
             return session.handle == handle
@@ -89,10 +97,16 @@ public class Session: NSObject, NSCopying {
         }
     }
 
+    @objc
     public override var hash: Int {
         return handle.hashValue
     }
-
+    
+    @objc
+    public func detachAsync(completionHandler: @escaping () -> Void) {
+        detach { completionHandler() }
+    }
+    
     public func detach(_ completionHandler: @escaping DetachComplete = {}) {
         Runtime.scheduleOnFridaThread {
             frida_session_detach(self.handle, nil, { source, result, data in
@@ -107,6 +121,17 @@ public class Session: NSObject, NSCopying {
         }
     }
 
+    @objc
+    public func resumeAsync(completionHandler: @escaping (Bool, NSError?) -> Void) {
+        resume { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(false, error as NSError)
+            }
+        }
+    }
+    
     public func resume(_ completionHandler: @escaping ResumeComplete = { _ in }) {
         Runtime.scheduleOnFridaThread {
             frida_session_resume(self.handle, nil, { source, result, data in
@@ -126,6 +151,17 @@ public class Session: NSObject, NSCopying {
                     operation.completionHandler { true }
                 }
             }, Unmanaged.passRetained(AsyncOperation<ResumeComplete>(completionHandler)).toOpaque())
+        }
+    }
+    
+    @objc
+    public func enableChildGatingAsync(completionHandler: @escaping (Bool, NSError?) -> Void) {
+        enableChildGating { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(false, error as NSError)
+            }
         }
     }
 
@@ -150,6 +186,17 @@ public class Session: NSObject, NSCopying {
             }, Unmanaged.passRetained(AsyncOperation<EnableChildGatingComplete>(completionHandler)).toOpaque())
         }
     }
+    
+    @objc
+    public func disableChildGatingAsync(completionHandler: @escaping (Bool, NSError?) -> Void) {
+        disableChildGating { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(false, error as NSError)
+            }
+        }
+    }
 
     public func disableChildGating(_ completionHandler: @escaping DisableChildGatingComplete = { _ in }) {
         Runtime.scheduleOnFridaThread {
@@ -170,6 +217,17 @@ public class Session: NSObject, NSCopying {
                     operation.completionHandler { true }
                 }
             }, Unmanaged.passRetained(AsyncOperation<DisableChildGatingComplete>(completionHandler)).toOpaque())
+        }
+    }
+    
+    @objc
+    public func createScriptAsync(source: String, name: String? = nil, runtime: ScriptRuntime, completionHandler: @escaping (Script?, NSError?) -> Void) {
+        createScript(source) { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(nil, error as NSError)
+            }
         }
     }
 
@@ -201,6 +259,17 @@ public class Session: NSObject, NSCopying {
             }, Unmanaged.passRetained(AsyncOperation<CreateScriptComplete>(completionHandler)).toOpaque())
         }
     }
+    
+    @objc
+    public func createScriptAsync(bytes: Data, name: String? = nil, runtime: ScriptRuntime, completionHandler: @escaping (Script?, NSError?) -> Void) {
+        createScript(bytes) { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(nil, error as NSError)
+            }
+        }
+    }
 
     public func createScript(_ bytes: Data, name: String? = nil, runtime: ScriptRuntime? = nil, completionHandler: @escaping CreateScriptComplete) {
         Runtime.scheduleOnFridaThread {
@@ -230,6 +299,17 @@ public class Session: NSObject, NSCopying {
                     operation.completionHandler { script }
                 }
             }, Unmanaged.passRetained(AsyncOperation<CreateScriptComplete>(completionHandler)).toOpaque())
+        }
+    }
+    
+    @objc
+    public func compileScriptAsync(source: String, name: String? = nil, runtime: ScriptRuntime, completionHandler: @escaping (Data?, NSError?) -> Void) {
+        compileScript(source) { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(nil, error as NSError)
+            }
         }
     }
 
@@ -275,6 +355,17 @@ public class Session: NSObject, NSCopying {
 
         return options
     }
+    
+    @objc
+    public func enableDebuggerAsync(port: UInt16 = 0, completionHandler: @escaping (Bool, NSError?) -> Void) {
+        enableDebugger(port) { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(false, error as NSError)
+            }
+        }
+    }
 
     public func enableDebugger(_ port: UInt16 = 0, completionHandler: @escaping EnableDebuggerComplete = { _ in }) {
         Runtime.scheduleOnFridaThread {
@@ -297,6 +388,17 @@ public class Session: NSObject, NSCopying {
             }, Unmanaged.passRetained(AsyncOperation<EnableDebuggerComplete>(completionHandler)).toOpaque())
         }
     }
+    
+    @objc
+    public func disableDebuggerAsync(completionHandler: @escaping (Bool, NSError?) -> Void) {
+        disableDebugger { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(false, error as NSError)
+            }
+        }
+    }
 
     public func disableDebugger(_ completionHandler: @escaping DisableDebuggerComplete = { _ in }) {
         Runtime.scheduleOnFridaThread {
@@ -317,6 +419,18 @@ public class Session: NSObject, NSCopying {
                     operation.completionHandler { true }
                 }
             }, Unmanaged.passRetained(AsyncOperation<DisableDebuggerComplete>(completionHandler)).toOpaque())
+        }
+    }
+    
+    @objc
+    public func setupPeerConnectionAsync(stunServer: String? = nil, relays: [Relay]? = nil,
+                                         completionHandler: @escaping (Bool, NSError?) -> Void) {
+        setupPeerConnection(stunServer: stunServer, relays: relays) { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(false, error as NSError)
+            }
         }
     }
 
@@ -353,6 +467,18 @@ public class Session: NSObject, NSCopying {
                     operation.completionHandler { true }
                 }
             }, Unmanaged.passRetained(AsyncOperation<SetupPeerConnectionComplete>(completionHandler)).toOpaque())
+        }
+    }
+    
+    @objc
+    public func joinPortalAsync(address: String, certificate: String? = nil, token: String? = nil, acl: [String]? = nil,
+                                completionHandler: @escaping (PortalMembership?, NSError?) -> Void) {
+        joinPortal(address, certificate: certificate, token: token, acl: acl) { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(nil, error as NSError)
+            }
         }
     }
 

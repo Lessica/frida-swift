@@ -1,4 +1,13 @@
 import CFrida
+import CoreGraphics
+
+#if os(macOS)
+import Cocoa
+public typealias SystemImage = NSImage
+#else
+import UIKit
+public typealias SystemImage = UIImage
+#endif
 
 class Marshal {
     private static let gvariantStringType = g_variant_type_new("s")
@@ -141,7 +150,7 @@ class Marshal {
         return formatter
     }
 
-    static func iconFromVarDict(_ dict: [String: Any]) -> NSImage? {
+    static func iconFromVarDict(_ dict: [String: Any]) -> SystemImage? {
         guard let format = dict["format"] as? String else {
             return nil
         }
@@ -159,13 +168,13 @@ class Marshal {
             }
             return imageFromRGBA(width: Int(width), height: Int(height), pixels: image)
         case "png":
-            return NSImage(data: image)
+            return SystemImage(data: image)
         default:
             return nil
         }
     }
 
-    private static func imageFromRGBA(width: Int, height: Int, pixels: Data) -> NSImage? {
+    private static func imageFromRGBA(width: Int, height: Int, pixels: Data) -> SystemImage? {
         let bitsPerComponent = 8
         let bitsPerPixel = 4 * bitsPerComponent
         let bytesPerRow = width * (bitsPerPixel / 8)
@@ -179,7 +188,11 @@ class Marshal {
 
         let image = CGImage(width: width, height: height, bitsPerComponent: bitsPerComponent, bitsPerPixel: bitsPerPixel, bytesPerRow: bytesPerRow, space: colorSpace, bitmapInfo: bitmapInfo, provider: provider, decode: nil, shouldInterpolate: shouldInterpolate, intent: renderingIntent)!
 
+#if os(macOS)
         return NSImage(cgImage: image, size: NSSize(width: width, height: height))
+#else
+        return UIImage(cgImage: image)
+#endif
     }
 
     static func arrayFromStrv(_ strv: UnsafeMutablePointer<UnsafeMutablePointer<gchar>?>) -> [String] {

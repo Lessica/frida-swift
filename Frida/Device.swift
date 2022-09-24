@@ -2,12 +2,23 @@ import CFrida
 
 @objc(FridaDevice)
 public class Device: NSObject, NSCopying {
+    
+    @objc
     public weak var delegate: DeviceDelegate?
 
-    public enum Kind {
+    @objc(FridaKind)
+    public enum Kind : UInt32, CustomStringConvertible {
         case local
         case remote
-        case usb
+        case USB
+        
+        public var description: String {
+            switch self {
+            case .local: return "local"
+            case .remote: return "remote"
+            case .USB: return "usb"
+            }
+        }
     }
 
     public typealias QuerySystemParametersComplete = (_ result: QuerySystemParametersResult) -> Void
@@ -110,6 +121,7 @@ public class Device: NSObject, NSCopying {
                                               releaseConnection, GConnectFlags(0))
     }
 
+    @objc
     public func copy(with zone: NSZone?) -> Any {
         g_object_ref(gpointer(handle))
         return Device(handle: handle)
@@ -127,15 +139,18 @@ public class Device: NSObject, NSCopying {
         }
     }
 
-    public var id: String {
+    @objc
+    public var identifier: String {
         return String(cString: frida_device_get_id(handle))
     }
 
+    @objc
     public var name: String {
         return String(cString: frida_device_get_name(handle))
     }
 
-    public lazy var icon: NSImage? = {
+    @objc
+    public lazy var icon: SystemImage? = {
         guard let iconVariant = frida_device_get_icon(handle) else {
             return nil
         }
@@ -143,6 +158,7 @@ public class Device: NSObject, NSCopying {
         return Marshal.iconFromVarDict(iconDict)
     }()
 
+    @objc
     public var kind: Kind {
         switch frida_device_get_dtype(handle) {
         case FRIDA_DEVICE_TYPE_LOCAL:
@@ -150,26 +166,30 @@ public class Device: NSObject, NSCopying {
         case FRIDA_DEVICE_TYPE_REMOTE:
             return Kind.remote
         case FRIDA_DEVICE_TYPE_USB:
-            return Kind.usb
+            return Kind.USB
         default:
             fatalError("Unexpected Frida Device kind")
         }
     }
 
+    @objc
     public lazy var bus: Bus = {
         let busHandle = frida_device_get_bus(handle)!
         g_object_ref(gpointer(busHandle))
         return Bus(handle: busHandle)
     }()
 
+    @objc
     public var isLost: Bool {
         return frida_device_is_lost(handle) != 0
     }
 
+    @objc
     public override var description: String {
-        return "Frida.Device(id: \"\(id)\", name: \"\(name)\", kind: \"\(kind)\")"
+        return "Frida.Device(id: \"\(identifier)\", name: \"\(name)\", kind: \"\(kind)\")"
     }
 
+    @objc
     public override func isEqual(_ object: Any?) -> Bool {
         if let device = object as? Device {
             return device.handle == handle
@@ -178,8 +198,20 @@ public class Device: NSObject, NSCopying {
         }
     }
 
+    @objc
     public override var hash: Int {
         return handle.hashValue
+    }
+    
+    @objc
+    public func querySystemParametersAsync(completionHandler: @escaping ([String: Any]?, NSError?) -> Void) {
+        querySystemParameters { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(nil, error as NSError)
+            }
+        }
     }
 
     public func querySystemParameters(_ completionHandler: @escaping QuerySystemParametersComplete) {
@@ -205,6 +237,17 @@ public class Device: NSObject, NSCopying {
                     operation.completionHandler { parameters }
                 }
             }, Unmanaged.passRetained(AsyncOperation<QuerySystemParametersComplete>(completionHandler)).toOpaque())
+        }
+    }
+    
+    @objc
+    public func getFrontmostApplicationAsync(scope: Scope, completionHandler: @escaping (ApplicationDetails?, NSError?) -> Void) {
+        getFrontmostApplication(scope: scope) { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(nil, error as NSError)
+            }
         }
     }
 
@@ -238,6 +281,17 @@ public class Device: NSObject, NSCopying {
                     operation.completionHandler { application }
                 }
             }, Unmanaged.passRetained(AsyncOperation<GetFrontmostApplicationComplete>(completionHandler)).toOpaque())
+        }
+    }
+    
+    @objc
+    public func enumerateApplicationsAsync(identifiers: [String]? = nil, scope: Scope, completionHandler: @escaping ([ApplicationDetails]?, NSError?) -> Void) {
+        enumerateApplications(identifiers: identifiers, scope: scope) { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(nil, error as NSError)
+            }
         }
     }
 
@@ -283,6 +337,17 @@ public class Device: NSObject, NSCopying {
             }, Unmanaged.passRetained(AsyncOperation<EnumerateApplicationsComplete>(completionHandler)).toOpaque())
         }
     }
+    
+    @objc
+    public func enumerateProcessesAsync(processIdentifiers: [UInt]? = nil, scope: Scope, completionHandler: @escaping ([ProcessDetails]?, NSError?) -> Void) {
+        enumerateProcesses(pids: processIdentifiers, scope: scope) { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(nil, error as NSError)
+            }
+        }
+    }
 
     public func enumerateProcesses(pids: [UInt]? = nil, scope: Scope? = nil, _ completionHandler: @escaping EnumerateProcessesComplete) {
         Runtime.scheduleOnFridaThread {
@@ -326,6 +391,17 @@ public class Device: NSObject, NSCopying {
             }, Unmanaged.passRetained(AsyncOperation<EnumerateProcessesComplete>(completionHandler)).toOpaque())
         }
     }
+    
+    @objc
+    public func enableSpawnGatingAsync(completionHandler: @escaping (Bool, NSError?) -> Void) {
+        enableSpawnGating { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(false, error as NSError)
+            }
+        }
+    }
 
     public func enableSpawnGating(_ completionHandler: @escaping EnableSpawnGatingComplete = { _ in }) {
         Runtime.scheduleOnFridaThread {
@@ -348,6 +424,17 @@ public class Device: NSObject, NSCopying {
             }, Unmanaged.passRetained(AsyncOperation<EnableSpawnGatingComplete>(completionHandler)).toOpaque())
         }
     }
+    
+    @objc
+    public func disableSpawnGatingAsync(completionHandler: @escaping (Bool, NSError?) -> Void) {
+        disableSpawnGating { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(false, error as NSError)
+            }
+        }
+    }
 
     public func disableSpawnGating(_ completionHandler: @escaping DisableSpawnGatingComplete = { _ in }) {
         Runtime.scheduleOnFridaThread {
@@ -368,6 +455,17 @@ public class Device: NSObject, NSCopying {
                     operation.completionHandler { true }
                 }
             }, Unmanaged.passRetained(AsyncOperation<DisableSpawnGatingComplete>(completionHandler)).toOpaque())
+        }
+    }
+    
+    @objc
+    public func enumeratePendingSpawnAsync(completionHandler: @escaping ([SpawnDetails]?, NSError?) -> Void) {
+        enumeratePendingSpawn { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(nil, error as NSError)
+            }
         }
     }
 
@@ -400,6 +498,17 @@ public class Device: NSObject, NSCopying {
             }, Unmanaged.passRetained(AsyncOperation<EnumeratePendingSpawnComplete>(completionHandler)).toOpaque())
         }
     }
+    
+    @objc
+    public func enumeratePendingChildrenAsync(completionHandler: @escaping ([ChildDetails]?, NSError?) -> Void) {
+        enumeratePendingChildren { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(nil, error as NSError)
+            }
+        }
+    }
 
     public func enumeratePendingChildren(_ completionHandler: @escaping EnumeratePendingChildrenComplete) {
         Runtime.scheduleOnFridaThread {
@@ -428,6 +537,19 @@ public class Device: NSObject, NSCopying {
                     operation.completionHandler { children }
                 }
             }, Unmanaged.passRetained(AsyncOperation<EnumeratePendingChildrenComplete>(completionHandler)).toOpaque())
+        }
+    }
+    
+    @objc
+    public func spawnAsync(program: String, argv: [String]? = nil, envp: [String: String]? = nil, env: [String: String]? = nil,
+                           cwd: String? = nil, stdio: Stdio, completionHandler: @escaping (UInt, NSError?) -> Void)
+    {
+        spawn(program, argv: argv, envp: envp, env: env, cwd: cwd, stdio: stdio) { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(UInt.max, error as NSError)
+            }
         }
     }
 
@@ -484,6 +606,17 @@ public class Device: NSObject, NSCopying {
             }, Unmanaged.passRetained(AsyncOperation<SpawnComplete>(completionHandler)).toOpaque())
         }
     }
+    
+    @objc
+    public func inputAsync(processIdentifier: UInt, data: Data, completionHandler: @escaping (Bool, NSError?) -> Void) {
+        input(processIdentifier, data: data) { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(false, error as NSError)
+            }
+        }
+    }
 
     public func input(_ pid: UInt, data: Data, completionHandler: @escaping InputComplete = { _ in }) {
         Runtime.scheduleOnFridaThread {
@@ -508,6 +641,17 @@ public class Device: NSObject, NSCopying {
             g_bytes_unref(rawData)
         }
     }
+    
+    @objc
+    public func resumeAsync(processIdentifier: UInt, completionHandler: @escaping (Bool, NSError?) -> Void) {
+        resume(processIdentifier) { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(false, error as NSError)
+            }
+        }
+    }
 
     public func resume(_ pid: UInt, completionHandler: @escaping ResumeComplete = { _ in }) {
         Runtime.scheduleOnFridaThread {
@@ -530,6 +674,17 @@ public class Device: NSObject, NSCopying {
             }, Unmanaged.passRetained(AsyncOperation<ResumeComplete>(completionHandler)).toOpaque())
         }
     }
+    
+    @objc
+    public func killAsync(processIdentifier: UInt, completionHandler: @escaping (Bool, NSError?) -> Void) {
+        kill(processIdentifier) { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(false, error as NSError)
+            }
+        }
+    }
 
     public func kill(_ pid: UInt, completionHandler: @escaping KillComplete = { _ in }) {
         Runtime.scheduleOnFridaThread {
@@ -550,6 +705,17 @@ public class Device: NSObject, NSCopying {
                     operation.completionHandler { true }
                 }
             }, Unmanaged.passRetained(AsyncOperation<KillComplete>(completionHandler)).toOpaque())
+        }
+    }
+    
+    @objc
+    public func attachAsync(toProcessIdentifier pid: UInt, realm: Realm, persistTimeout: UInt, completionHandler: @escaping (Session?, NSError?) -> Void) {
+        attach(to: pid, realm: realm, persistTimeout: persistTimeout) { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(nil, error as NSError)
+            }
         }
     }
 
@@ -589,8 +755,19 @@ public class Device: NSObject, NSCopying {
             }, Unmanaged.passRetained(AsyncOperation<AttachComplete>(completionHandler)).toOpaque())
         }
     }
+    
+    @objc
+    public func injectLibraryFileAsync(intoProcessIdentifier pid: UInt, path: String, entrypoint: String, data: String, completionHandler: @escaping (UInt, NSError?) -> Void) {
+        injectLibraryFile(into: pid, path: path, entrypoint: entrypoint, data: data) { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(UInt.max, error as NSError)
+            }
+        }
+    }
 
-    public func injectLibraryFileFile(into pid: UInt, path: String, entrypoint: String, data: String, completionHandler: @escaping InjectLibraryFileComplete) {
+    public func injectLibraryFile(into pid: UInt, path: String, entrypoint: String, data: String, completionHandler: @escaping InjectLibraryFileComplete) {
         Runtime.scheduleOnFridaThread {
             frida_device_inject_library_file(self.handle, guint(pid), path, entrypoint, data, nil, { source, result, data in
                 let operation = Unmanaged<AsyncOperation<InjectLibraryFileComplete>>.fromOpaque(data!).takeRetainedValue()
@@ -613,8 +790,19 @@ public class Device: NSObject, NSCopying {
             }, Unmanaged.passRetained(AsyncOperation<InjectLibraryFileComplete>(completionHandler)).toOpaque())
         }
     }
+    
+    @objc
+    public func injectLibraryBlobAsync(intoProcessIdentifier pid: UInt, blob: Data, entrypoint: String, data: String, completionHandler: @escaping (UInt, NSError?) -> Void) {
+        injectLibraryBlob(into: pid, blob: blob, entrypoint: entrypoint, data: data) { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(UInt.max, error as NSError)
+            }
+        }
+    }
 
-    public func injectLibraryBlobBlob(into pid: UInt, blob: Data, entrypoint: String, data: String, completionHandler: @escaping InjectLibraryBlobComplete) {
+    public func injectLibraryBlob(into pid: UInt, blob: Data, entrypoint: String, data: String, completionHandler: @escaping InjectLibraryBlobComplete) {
         Runtime.scheduleOnFridaThread {
             let rawBlob = Marshal.bytesFromData(blob)
             frida_device_inject_library_blob(self.handle, guint(pid), rawBlob, entrypoint, data, nil, { source, result, data in
@@ -637,6 +825,17 @@ public class Device: NSObject, NSCopying {
                 }
             }, Unmanaged.passRetained(AsyncOperation<InjectLibraryBlobComplete>(completionHandler)).toOpaque())
             g_bytes_unref(rawBlob)
+        }
+    }
+    
+    @objc
+    public func openChannelAsync(address: String, completionHandler: @escaping (IOStream?, NSError?) -> Void) {
+        openChannel(address) { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(nil, error as NSError)
+            }
         }
     }
 

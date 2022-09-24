@@ -8,6 +8,7 @@ public class ApplicationDetails: NSObject, NSCopying {
         self.handle = handle
     }
 
+    @objc
     public func copy(with zone: NSZone?) -> Any {
         g_object_ref(gpointer(handle))
         return ApplicationDetails(handle: handle)
@@ -17,19 +18,23 @@ public class ApplicationDetails: NSObject, NSCopying {
         g_object_unref(gpointer(handle))
     }
 
+    @objc
     public var identifier: String {
         return String(cString: frida_application_get_identifier(handle))
     }
 
+    @objc
     public var name: String {
         return String(cString: frida_application_get_name(handle))
     }
 
-    public var pid: UInt? {
+    @objc(processIdentifier)
+    public var pid: UInt {
         let value = frida_application_get_pid(handle)
-        return value != 0 ? UInt(value) : nil
+        return value != 0 ? UInt(value) : 0
     }
 
+    @objc
     public lazy var parameters: [String: Any] = {
         var result = Marshal.dictionaryFromParametersDict(frida_application_get_parameters(handle))
 
@@ -40,21 +45,24 @@ public class ApplicationDetails: NSObject, NSCopying {
         return result
     }()
 
-    public lazy var icons: [NSImage] = {
+    @objc
+    public lazy var icons: [SystemImage] = {
         guard let icons = parameters["icons"] as? [[String: Any]] else {
             return []
         }
         return icons.compactMap(Marshal.iconFromVarDict)
     }()
 
+    @objc
     public override var description: String {
-        if let pid = self.pid {
+        if self.pid != 0 {
             return "Frida.ApplicationDetails(identifier: \"\(identifier)\", name: \"\(name)\", pid: \(pid), parameters: \(parameters))"
         } else {
             return "Frida.ApplicationDetails(identifier: \"\(identifier)\", name: \"\(name)\", parameters: \(parameters))"
         }
     }
 
+    @objc
     public override func isEqual(_ object: Any?) -> Bool {
         if let details = object as? ApplicationDetails {
             return details.handle == handle
@@ -63,6 +71,7 @@ public class ApplicationDetails: NSObject, NSCopying {
         }
     }
 
+    @objc
     public override var hash: Int {
         return handle.hashValue
     }

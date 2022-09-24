@@ -1,6 +1,6 @@
 import Foundation
 
-public class RpcRequest {
+class RpcRequest {
     private var result: RpcInternalResult?
     private var promises: [(RpcInternalResult) -> Void] = []
 

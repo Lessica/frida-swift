@@ -13,6 +13,7 @@ public class PortalMembership: NSObject, NSCopying {
         super.init()
     }
 
+    @objc
     public func copy(with zone: NSZone?) -> Any {
         g_object_ref(gpointer(handle))
         return PortalMembership(handle: handle)
@@ -25,10 +26,12 @@ public class PortalMembership: NSObject, NSCopying {
         }
     }
 
+    @objc
     public override var description: String {
         return "Frida.PortalMembership()"
     }
 
+    @objc
     public override func isEqual(_ object: Any?) -> Bool {
         if let membership = object as? PortalMembership {
             return membership.handle == handle
@@ -37,10 +40,22 @@ public class PortalMembership: NSObject, NSCopying {
         }
     }
 
+    @objc
     public override var hash: Int {
         return handle.hashValue
     }
 
+    @objc
+    public func terminateAsync(completionHandler: @escaping (Bool, NSError?) -> Void) {
+        terminate { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(false, error as NSError)
+            }
+        }
+    }
+    
     public func terminate(_ completionHandler: @escaping TerminateComplete = { _ in }) {
         Runtime.scheduleOnFridaThread {
             frida_portal_membership_terminate(self.handle, nil, { source, result, data in

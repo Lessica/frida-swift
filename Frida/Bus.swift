@@ -2,6 +2,8 @@ import CFrida
 
 @objc(FridaBus)
 public class Bus: NSObject, NSCopying {
+    
+    @objc
     public weak var delegate: BusDelegate?
 
     public typealias AttachComplete = (_ result: AttachResult) -> Void
@@ -29,6 +31,7 @@ public class Bus: NSObject, NSCopying {
                                                  releaseConnection, GConnectFlags(0))
     }
 
+    @objc
     public func copy(with zone: NSZone?) -> Any {
         g_object_ref(gpointer(handle))
         return Bus(handle: handle)
@@ -45,14 +48,17 @@ public class Bus: NSObject, NSCopying {
         }
     }
 
+    @objc
     public var isClosed: Bool {
         return frida_bus_is_detached(handle) != 0
     }
 
+    @objc
     public override var description: String {
         return "Frida.Bus()"
     }
 
+    @objc
     public override func isEqual(_ object: Any?) -> Bool {
         if let bus = object as? Bus {
             return bus.handle == handle
@@ -61,10 +67,22 @@ public class Bus: NSObject, NSCopying {
         }
     }
 
+    @objc
     public override var hash: Int {
         return handle.hashValue
     }
 
+    @objc
+    public func attachAsync(completionHandler: @escaping (Bool, NSError?) -> Void) {
+        attach { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(false, error as NSError)
+            }
+        }
+    }
+    
     public func attach(_ completionHandler: @escaping AttachComplete = { _ in }) {
         Runtime.scheduleOnFridaThread {
             frida_bus_attach(self.handle, nil, { source, result, data in
@@ -87,6 +105,7 @@ public class Bus: NSObject, NSCopying {
         }
     }
 
+    @objc
     public func post(_ message: Any, data: Data? = nil) {
         let jsonData = try! JSONSerialization.data(withJSONObject: message, options: JSONSerialization.WritingOptions())
         let json = String(data: jsonData, encoding: String.Encoding.utf8)!

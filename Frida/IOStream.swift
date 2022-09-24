@@ -31,6 +31,7 @@ public class IOStream: NSObject, NSCopying {
         super.init()
     }
 
+    @objc
     public func copy(with zone: NSZone?) -> Any {
         g_object_ref(gpointer(handle))
         return IOStream(handle: handle)
@@ -40,14 +41,17 @@ public class IOStream: NSObject, NSCopying {
         g_object_unref(gpointer(handle))
     }
 
+    @objc
     public var isClosed: Bool {
         return g_io_stream_is_closed(handle) != 0
     }
 
+    @objc
     public override var description: String {
         return "Frida.IOStream()"
     }
 
+    @objc
     public override func isEqual(_ object: Any?) -> Bool {
         if let script = object as? IOStream {
             return script.handle == handle
@@ -56,8 +60,20 @@ public class IOStream: NSObject, NSCopying {
         }
     }
 
+    @objc
     public override var hash: Int {
         return handle.hashValue
+    }
+    
+    @objc
+    public func closeAsync(count: UInt, completionHandler: @escaping (Bool, NSError?) -> Void) {
+        close(count) { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(false, error as NSError)
+            }
+        }
     }
 
     public func close(_ count: UInt, completionHandler: @escaping CloseComplete) {
@@ -79,6 +95,17 @@ public class IOStream: NSObject, NSCopying {
                     operation.completionHandler { true }
                 }
             }, Unmanaged.passRetained(AsyncOperation<CloseComplete>(completionHandler)).toOpaque())
+        }
+    }
+    
+    @objc
+    public func readAsync(count: UInt, completionHandler: @escaping (Data?, NSError?) -> Void) {
+        read(count) { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(nil, error as NSError)
+            }
         }
     }
 
@@ -105,6 +132,17 @@ public class IOStream: NSObject, NSCopying {
                     operation.completionHandler { data }
                 }
             }, Unmanaged.passRetained(AsyncOperation<ReadComplete>(completionHandler)).toOpaque())
+        }
+    }
+    
+    @objc
+    public func readAllAsync(count: UInt, completionHandler: @escaping (Data?, NSError?) -> Void) {
+        readAll(count) { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(nil, error as NSError)
+            }
         }
     }
 
@@ -138,6 +176,17 @@ public class IOStream: NSObject, NSCopying {
             }, Unmanaged.passRetained(AsyncOperation<ReadAllComplete>(completionHandler, userData: buffer)).toOpaque())
         }
     }
+    
+    @objc
+    public func writeAsync(data: Data, completionHandler: @escaping (UInt, NSError?) -> Void) {
+        write(data) { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(UInt.max, error as NSError)
+            }
+        }
+    }
 
     public func write(_ data: Data, completionHandler: @escaping WriteComplete) {
         Runtime.scheduleOnFridaThread {
@@ -160,6 +209,17 @@ public class IOStream: NSObject, NSCopying {
                 }
             }, Unmanaged.passRetained(AsyncOperation<WriteComplete>(completionHandler)).toOpaque())
             g_bytes_unref(bytes)
+        }
+    }
+    
+    @objc
+    public func writeAllAsync(data: Data, completionHandler: @escaping (Bool, NSError?) -> Void) {
+        writeAll(data) { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(false, error as NSError)
+            }
         }
     }
 

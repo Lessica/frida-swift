@@ -66,7 +66,7 @@ class FridaTests: XCTestCase {
         var application: ApplicationDetails?
         manager.enumerateDevices { result in
             let devices = try! result()
-            guard let usbDevice = devices.filter({ $0.kind == Device.Kind.usb }).first else {
+            guard let usbDevice = devices.filter({ $0.kind == Device.Kind.USB }).first else {
                 print("No USB devices for test \(#function).")
                 expectation.fulfill()
                 return
@@ -96,7 +96,7 @@ class FridaTests: XCTestCase {
         manager.enumerateDevices { result in
             let devices = try! result()
 
-            guard let usbDevice = devices.filter({ $0.kind == Device.Kind.usb }).first else {
+            guard let usbDevice = devices.filter({ $0.kind == Device.Kind.USB }).first else {
                 print("No USB devices for test \(#function).")
                 expectation.fulfill()
                 return
@@ -129,7 +129,7 @@ class FridaTests: XCTestCase {
         var processes: [ProcessDetails] = []
         manager.enumerateDevices { result in
             let devices = try! result()
-            let device = devices.filter { $0.kind == Device.Kind.usb }.first!
+            let device = devices.filter { $0.kind == Device.Kind.USB }.first!
             device.enumerateProcesses(pids: [38886, 1], scope: .full) { result in
                 processes = try! result()
                 expectation.fulfill()

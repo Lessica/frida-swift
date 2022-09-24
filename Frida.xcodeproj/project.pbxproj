@@ -153,8 +153,8 @@
 				0C5A27C81CA6FD85004D820F /* CFrida */,
 				0C9289361CA6F06C00FBA302 /* Frida */,
 				0C9289421CA6F06C00FBA302 /* FridaTests */,
-				FA517E9C22C41380009A9A0E /* TestTarget */,
 				0C9289351CA6F06C00FBA302 /* Products */,
+				FA517E9C22C41380009A9A0E /* TestTarget */,
 			);
 			sourceTree = "<group>";
 		};
@@ -239,9 +239,9 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 0C9289481CA6F06C00FBA302 /* Build configuration list for PBXNativeTarget "Frida" */;
 			buildPhases = (
+				0C9289311CA6F06C00FBA302 /* Headers */,
 				0C92892F1CA6F06C00FBA302 /* Sources */,
 				0C9289301CA6F06C00FBA302 /* Frameworks */,
-				0C9289311CA6F06C00FBA302 /* Headers */,
 				0C9289321CA6F06C00FBA302 /* Resources */,
 			);
 			buildRules = (
@@ -539,18 +539,19 @@
 				DEFINES_MODULE = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_BITCODE = NO;
 				FRAMEWORK_SEARCH_PATHS = "";
 				FRAMEWORK_VERSION = A;
 				HEADER_SEARCH_PATHS = "";
 				INFOPLIST_FILE = Frida/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					CFrida,
 				);
-				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = (
 					"-lbsm",
@@ -559,12 +560,16 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = re.frida.Frida;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos macosx";
 				SWIFT_INCLUDE_PATHS = CFrida;
-				SWIFT_INSTALL_OBJC_HEADER = NO;
+				SWIFT_INSTALL_OBJC_HEADER = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_SWIFT3_OBJC_INFERENCE = Default;
 				SWIFT_VERSION = 5.0;
+				TVOS_DEPLOYMENT_TARGET = 13.0;
+				WATCHOS_DEPLOYMENT_TARGET = 6.0;
 			};
 			name = Debug;
 		};
@@ -578,18 +583,19 @@
 				DEFINES_MODULE = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_BITCODE = NO;
 				FRAMEWORK_SEARCH_PATHS = "";
 				FRAMEWORK_VERSION = A;
 				HEADER_SEARCH_PATHS = "";
 				INFOPLIST_FILE = Frida/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					CFrida,
 				);
-				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = (
 					"-lbsm",
@@ -598,11 +604,15 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = re.frida.Frida;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos macosx";
 				SWIFT_INCLUDE_PATHS = CFrida;
-				SWIFT_INSTALL_OBJC_HEADER = NO;
+				SWIFT_INSTALL_OBJC_HEADER = YES;
 				SWIFT_SWIFT3_OBJC_INFERENCE = Default;
 				SWIFT_VERSION = 5.0;
+				TVOS_DEPLOYMENT_TARGET = 13.0;
+				WATCHOS_DEPLOYMENT_TARGET = 6.0;
 			};
 			name = Release;
 		};

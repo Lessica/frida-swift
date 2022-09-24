@@ -2,6 +2,8 @@ import CFrida
 
 @objc(FridaScript)
 public class Script: NSObject, NSCopying {
+    
+    @objc
     public weak var delegate: ScriptDelegate?
 
     public typealias LoadComplete = (_ result: LoadResult) -> Void
@@ -35,6 +37,7 @@ public class Script: NSObject, NSCopying {
                                                  releaseConnection, GConnectFlags(0))
     }
 
+    @objc
     public func copy(with zone: NSZone?) -> Any {
         g_object_ref(gpointer(handle))
         return Script(handle: handle)
@@ -55,10 +58,12 @@ public class Script: NSObject, NSCopying {
         return Exports(script: self)
     }()
 
+    @objc
     public override var description: String {
         return "Frida.Script()"
     }
 
+    @objc
     public override func isEqual(_ object: Any?) -> Bool {
         if let script = object as? Script {
             return script.handle == handle
@@ -67,8 +72,20 @@ public class Script: NSObject, NSCopying {
         }
     }
 
+    @objc
     public override var hash: Int {
         return handle.hashValue
+    }
+    
+    @objc
+    public func loadAsync(completionHandler: @escaping (Bool, NSError?) -> Void) {
+        load { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(false, error as NSError)
+            }
+        }
     }
 
     public func load(_ completionHandler: @escaping LoadComplete = { _ in }) {
@@ -92,6 +109,17 @@ public class Script: NSObject, NSCopying {
             }, Unmanaged.passRetained(AsyncOperation<LoadComplete>(completionHandler)).toOpaque())
         }
     }
+    
+    @objc
+    public func unloadAsync(completionHandler: @escaping (Bool, NSError?) -> Void) {
+        unload { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(false, error as NSError)
+            }
+        }
+    }
 
     public func unload(_ completionHandler: @escaping UnloadComplete = { _ in }) {
         Runtime.scheduleOnFridaThread {
@@ -112,6 +140,17 @@ public class Script: NSObject, NSCopying {
                     operation.completionHandler { true }
                 }
             }, Unmanaged.passRetained(AsyncOperation<UnloadComplete>(completionHandler)).toOpaque())
+        }
+    }
+    
+    @objc
+    public func eternalizeAsync(completionHandler: @escaping (Bool, NSError?) -> Void) {
+        eternalize { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(false, error as NSError)
+            }
         }
     }
 
@@ -137,6 +176,7 @@ public class Script: NSObject, NSCopying {
         }
     }
 
+    @objc
     public func post(_ message: Any, data: Data? = nil) {
         let jsonData = try! JSONSerialization.data(withJSONObject: message, options: JSONSerialization.WritingOptions())
         let json = String(data: jsonData, encoding: String.Encoding.utf8)!

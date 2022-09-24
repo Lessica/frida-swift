@@ -1,7 +1,7 @@
 import Foundation
 
 @dynamicCallable
-public struct RpcFunction {
+struct RpcFunction {
     unowned let script: Script
     let functionName: String
 

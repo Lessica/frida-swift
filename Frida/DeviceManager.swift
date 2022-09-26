@@ -55,7 +55,7 @@ public class DeviceManager: NSObject, NSCopying {
             completionBlock(localhostDevice)
             return
         }
-        sharedManager.addRemoteDevice(address: "::1") { resultCallback in
+        sharedManager.addRemoteDevice(address: "127.0.0.1") { resultCallback in
             if let device = try? resultCallback() {
                 localhostDevice = device
                 completionBlock(device)

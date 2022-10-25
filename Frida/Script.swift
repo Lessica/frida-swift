@@ -15,6 +15,12 @@ public class Script: NSObject, NSCopying {
     public typealias EternalizeComplete = (_ result: EternalizeResult) -> Void
     public typealias EternalizeResult = () throws -> Bool
 
+    public typealias EnableDebuggerComplete = (_ result: EnableDebuggerResult) -> Void
+    public typealias EnableDebuggerResult = () throws -> Bool
+
+    public typealias DisableDebuggerComplete = (_ result: DisableDebuggerResult) -> Void
+    public typealias DisableDebuggerResult = () throws -> Bool
+
     private typealias DestroyHandler = @convention(c) (_ script: OpaquePointer, _ userData: gpointer) -> Void
     private typealias MessageHandler = @convention(c) (_ script: OpaquePointer, _ json: UnsafePointer<gchar>,
         _ data: OpaquePointer?, _ userData: gpointer) -> Void
@@ -186,6 +192,72 @@ public class Script: NSObject, NSCopying {
         frida_script_post(handle, json, rawData)
 
         g_bytes_unref(rawData)
+    }
+
+    @objc
+    public func enableDebuggerAsync(port: UInt16 = 0, completionHandler: @escaping (Bool, NSError?) -> Void) {
+        enableDebugger(port) { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(false, error as NSError)
+            }
+        }
+    }
+
+    public func enableDebugger(_ port: UInt16 = 0, completionHandler: @escaping EnableDebuggerComplete = { _ in }) {
+        Runtime.scheduleOnFridaThread {
+            frida_script_enable_debugger(self.handle, port, nil, { source, result, data in
+                let operation = Unmanaged<AsyncOperation<EnableDebuggerComplete>>.fromOpaque(data!).takeRetainedValue()
+
+                var rawError: UnsafeMutablePointer<GError>? = nil
+                frida_script_enable_debugger_finish(OpaquePointer(source), result, &rawError)
+                if let rawError = rawError {
+                    let error = Marshal.takeNativeError(rawError)
+                    Runtime.scheduleOnMainThread {
+                        operation.completionHandler { throw error }
+                    }
+                    return
+                }
+
+                Runtime.scheduleOnMainThread {
+                    operation.completionHandler { true }
+                }
+            }, Unmanaged.passRetained(AsyncOperation<EnableDebuggerComplete>(completionHandler)).toOpaque())
+        }
+    }
+
+    @objc
+    public func disableDebuggerAsync(completionHandler: @escaping (Bool, NSError?) -> Void) {
+        disableDebugger { resultCallback in
+            do {
+                completionHandler(try resultCallback(), nil)
+            } catch {
+                completionHandler(false, error as NSError)
+            }
+        }
+    }
+
+    public func disableDebugger(_ completionHandler: @escaping DisableDebuggerComplete = { _ in }) {
+        Runtime.scheduleOnFridaThread {
+            frida_script_disable_debugger(self.handle, nil, { source, result, data in
+                let operation = Unmanaged<AsyncOperation<DisableDebuggerComplete>>.fromOpaque(data!).takeRetainedValue()
+
+                var rawError: UnsafeMutablePointer<GError>? = nil
+                frida_script_disable_debugger_finish(OpaquePointer(source), result, &rawError)
+                if let rawError = rawError {
+                    let error = Marshal.takeNativeError(rawError)
+                    Runtime.scheduleOnMainThread {
+                        operation.completionHandler { throw error }
+                    }
+                    return
+                }
+
+                Runtime.scheduleOnMainThread {
+                    operation.completionHandler { true }
+                }
+            }, Unmanaged.passRetained(AsyncOperation<DisableDebuggerComplete>(completionHandler)).toOpaque())
+        }
     }
 
     private let onDestroyed: DestroyHandler = { _, userData in

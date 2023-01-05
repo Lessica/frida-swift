@@ -3039,6 +3039,7 @@ _frida_policyd_server
 _frida_policyd_server_routine
 _frida_policyd_subsystem
 _frida_policyd_soften
+___clang_at_available_requires_core_foundation_framework
 __frida_get_springboard_api
 _substitute_setup_process
 _substitute2_setup_process
